@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: skailar
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: skailar
+  name: skailar
+type: Opaque
+data:
+  OPENAI_API_KEY: <base64 encoded key>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: skailar
+  name: skailar
+  labels:
+    app: skailar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skailar
+  template:
+    metadata:
+      labels:
+        app: skailar
+    spec:
+      containers:
+        - name: skailar
+          image: <docker user>/skailar:latest
+          resources: {}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: skailar
+                  key: OPENAI_API_KEY
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: skailar
+  name: skailar
+  labels:
+    app: skailar
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000
+  selector:
+    app: skailar
+  type: ClusterIP
